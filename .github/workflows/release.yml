@@ -48,24 +48,22 @@ jobs:
         name: jar-file
         path: target/
 
-    - name: Create Windows installer with jpackage
+    - name: Create Windows portable app with jpackage
       run: |
         jpackage --input target `
-          --name "UCRED Movies" `
+          --name "UCRED-Movies" `
           --main-jar ucred-java-ui-movies-1.0.0.jar `
-          --type exe `
+          --type app-image `
           --app-version 1.0.0 `
           --vendor "UCRED" `
-          --description "Movie browser using TMDb API" `
-          --win-dir-chooser `
-          --win-shortcut `
-          --win-menu
+          --description "Movie browser using TMDb API"
+        Compress-Archive -Path "UCRED-Movies" -DestinationPath "UCRED-Movies-Windows-x64.zip"
 
-    - name: Upload Windows installer
+    - name: Upload Windows portable app
       uses: actions/upload-artifact@v4
       with:
-        name: windows-installer
-        path: "*.exe"
+        name: windows-portable
+        path: "*.zip"
 
   build-macos:
     needs: build-jar
@@ -87,21 +85,22 @@ jobs:
         name: jar-file
         path: target/
 
-    - name: Create macOS DMG with jpackage
+    - name: Create macOS portable app with jpackage
       run: |
         jpackage --input target \
-          --name "UCRED Movies" \
+          --name "UCRED-Movies" \
           --main-jar ucred-java-ui-movies-1.0.0.jar \
-          --type dmg \
+          --type app-image \
           --app-version 1.0.0 \
           --vendor "UCRED" \
           --description "Movie browser using TMDb API"
+        zip -r UCRED-Movies-macOS.zip "UCRED-Movies.app"
 
-    - name: Upload macOS installer
+    - name: Upload macOS portable app
       uses: actions/upload-artifact@v4
       with:
-        name: macos-installer
-        path: "*.dmg"
+        name: macos-portable
+        path: "*.zip"
 
   build-linux:
     needs: build-jar
@@ -123,27 +122,22 @@ jobs:
         name: jar-file
         path: target/
 
-    - name: Install jpackage dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y fakeroot
-
-    - name: Create Linux DEB with jpackage
+    - name: Create Linux portable app with jpackage
       run: |
         jpackage --input target \
-          --name ucred-movies \
+          --name UCRED-Movies \
           --main-jar ucred-java-ui-movies-1.0.0.jar \
-          --type deb \
+          --type app-image \
           --app-version 1.0.0 \
           --vendor "UCRED" \
-          --description "Movie browser using TMDb API" \
-          --linux-shortcut
+          --description "Movie browser using TMDb API"
+        zip -r UCRED-Movies-Linux-x64.zip UCRED-Movies
 
-    - name: Upload Linux installer
+    - name: Upload Linux portable app
       uses: actions/upload-artifact@v4
       with:
-        name: linux-installer
-        path: "*.deb"
+        name: linux-portable
+        path: "*.zip"
 
   create-release:
     needs: [build-windows, build-macos, build-linux]
@@ -162,28 +156,47 @@ jobs:
       with:
         files: |
           jar-file/*.jar
-          windows-installer/*.exe
-          macos-installer/*.dmg
-          linux-installer/*.deb
+          windows-portable/*.zip
+          macos-portable/*.zip
+          linux-portable/*.zip
         body: |
           # UCRED Movies Browser ${{ github.ref_name }}
           
           Navegador de películas usando la API de The Movie Database (TMDb).
           
-          ## Instaladores nativos
-          - **Windows**: Descarga el archivo `.exe` y ejecuta el instalador
-          - **macOS**: Descarga el archivo `.dmg`, ábrelo y arrastra la aplicación a la carpeta Aplicaciones
-          - **Linux**: Descarga el archivo `.deb` e instala con `sudo dpkg -i ucred-movies_*.deb`
+          ## 📦 Ejecutables portables (sin instalación)
+          - **Windows**: Descarga `UCRED-Movies-Windows-x64.zip`, descomprime y ejecuta `UCRED-Movies.exe`
+          - **macOS**: Descarga `UCRED-Movies-macOS.zip`, descomprime y abre `UCRED-Movies.app`
+          - **Linux**: Descarga `UCRED-Movies-Linux-x64.zip`, descomprime y ejecuta `UCRED-Movies/bin/UCRED-Movies`
           
-          ## JAR ejecutable
-          También puedes usar el archivo `.jar` directamente con:
+          ✨ **No requieren instalación** - simplemente descomprime y ejecuta
+          
+          🔧 **JRE incluido** - no necesitas tener Java instalado
+          
+          ## JAR ejecutable (requiere Java 17+)
+          Si prefieres usar el JAR directamente:
           ```bash
           export TMDB_API_KEY=tu_api_key_aqui
           java -jar ucred-java-ui-movies-1.0.0.jar
           ```
           
-          ## Requisitos
-          - Java 17 o superior (solo para el JAR)
-          - API key de TMDb (obtén una gratis en https://www.themoviedb.org/settings/api)
+          ## ⚙️ Configuración necesaria
+          Antes de ejecutar, configura tu API key de TMDb:
+          
+          **Windows (PowerShell)**:
+          ```powershell
+          $env:TMDB_API_KEY="tu_api_key_aqui"
+          .\UCRED-Movies.exe
+          ```
+          
+          **macOS/Linux**:
+          ```bash
+          export TMDB_API_KEY=tu_api_key_aqui
+          ./UCRED-Movies.app/Contents/MacOS/UCRED-Movies  # macOS
+          # o
+          ./UCRED-Movies/bin/UCRED-Movies  # Linux
+          ```
+          
+          📖 **Obtén tu API key gratis**: https://www.themoviedb.org/settings/api
         draft: false
         prerelease: false

@@ -6,57 +6,61 @@
 
 Aplicación de escritorio Java con interfaz Swing para explorar películas populares usando la API de [The Movie Database (TMDb)](https://www.themoviedb.org/).
 
-## 📸 Características
+## ✨ Características
 
-- 🎬 **Explorar películas populares** - Visualiza las películas más populares del momento
-- 🖼️ **Pósters de alta calidad** - Carga asíncrona de imágenes desde TMDb
-- 📝 **Información detallada** - Ver detalles completos al hacer clic en una película
-- 💰 **Datos financieros** - Presupuesto, recaudación y calificaciones
-- 🎯 **Interfaz intuitiva** - Grid de películas con panel de detalles lateral
+- 🎬 **Películas Populares** - Explora las películas más populares del momento
+- 🖼️ **Pósters en Alta Calidad** - Visualización de imágenes con carga asíncrona
+- 📋 **Detalles Completos** - Sinopsis, puntuación, fecha de estreno, géneros...
+- 🎨 **Interfaz Intuitiva** - Diseño limpio con Swing y GridBagLayout
+- 🔄 **Actualización Dinámica** - Datos en tiempo real desde TMDb API
+- 💾 **Sin Configuración** - La API key se solicita al inicio (no se guarda)
 
 ## 🚀 Instalación
 
-### Instaladores nativos (recomendado)
+### Ejecutables portables (recomendado)
 
-Descarga el instalador para tu sistema operativo desde la [página de releases](https://github.com/rivasjm/ucred-java-ui-movies/releases):
+Descarga el ejecutable para tu sistema operativo desde la [página de releases](https://github.com/rivasjm/ucred-java-ui-movies/releases):
 
-- **Windows**: `UCRED Movies-1.0.0.exe` - Instalador MSI con acceso directo en el menú de inicio
-- **macOS**: `UCRED Movies-1.0.0.dmg` - Imagen de disco, arrastra a Aplicaciones
-- **Linux**: `ucred-movies_1.0.0_amd64.deb` - Paquete Debian
+**Windows:**
+1. Descarga `UCRED-Movies-Windows-x64.zip`
+2. Descomprime el archivo
+3. **Doble click** en `UCRED-Movies.exe`
+4. Introduce tu API key de TMDb cuando se solicite
 
-### JAR ejecutable
+**macOS:**
+1. Descarga `UCRED-Movies-macOS.zip`
+2. Descomprime el archivo
+3. **Doble click** en `UCRED-Movies.app`
+4. Introduce tu API key de TMDb cuando se solicite
 
-Si prefieres usar el JAR directamente:
+**Linux:**
+1. Descarga `UCRED-Movies-Linux-x64.zip`
+2. Descomprime: `unzip UCRED-Movies-Linux-x64.zip`
+3. Ejecuta: `./UCRED-Movies/bin/UCRED-Movies`
+4. Introduce tu API key de TMDb cuando se solicite
 
-1. Asegúrate de tener Java 17 o superior instalado
-2. Descarga `ucred-java-ui-movies-1.0.0.jar` desde releases
-3. Ejecuta:
+✨ **No requieren instalación** - JRE incluido  
+🔧 **No requieren Java instalado** - Todo autocontenido
+
+### JAR ejecutable (requiere Java 17+)
 
 ```bash
-export TMDB_API_KEY=tu_api_key_aqui
+# Descargar el JAR desde Releases
 java -jar ucred-java-ui-movies-1.0.0.jar
 ```
 
-## 🔑 Configuración de API Key
+Al iniciar, la aplicación mostrará un diálogo solicitando tu API key.
 
-Necesitas una API key de TMDb (es gratis). Ver [API_KEY_SETUP.md](API_KEY_SETUP.md) para instrucciones detalladas.
+## 🔑 Obtener API Key de TMDb
 
-**Resumen rápido:**
+1. Crea una cuenta gratuita en [TMDb](https://www.themoviedb.org/signup)
+2. Ve a tu perfil → [Configuración → API](https://www.themoviedb.org/settings/api)
+3. Solicita una API key (opción "Developer")
+4. Copia tu **API Key (v3 auth)**
 
-1. Regístrate en https://www.themoviedb.org/
-2. Ve a Settings → API y solicita una clave
-3. Configura la variable de entorno:
+**Es gratis y tarda menos de 1 minuto** ⚡
 
-```bash
-# Linux/macOS
-export TMDB_API_KEY=tu_api_key_aqui
-
-# Windows PowerShell
-$env:TMDB_API_KEY="tu_api_key_aqui"
-
-# Windows CMD
-set TMDB_API_KEY=tu_api_key_aqui
-```
+Ver [API_KEY_SETUP.md](API_KEY_SETUP.md) para instrucciones detalladas.
 
 ## 🛠️ Desarrollo
 

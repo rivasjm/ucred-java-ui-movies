@@ -165,38 +165,34 @@ jobs:
           Navegador de películas usando la API de The Movie Database (TMDb).
           
           ## 📦 Ejecutables portables (sin instalación)
-          - **Windows**: Descarga `UCRED-Movies-Windows-x64.zip`, descomprime y ejecuta `UCRED-Movies.exe`
-          - **macOS**: Descarga `UCRED-Movies-macOS.zip`, descomprime y abre `UCRED-Movies.app`
-          - **Linux**: Descarga `UCRED-Movies-Linux-x64.zip`, descomprime y ejecuta `UCRED-Movies/bin/UCRED-Movies`
           
-          ✨ **No requieren instalación** - simplemente descomprime y ejecuta
+          ✨ **No requieren configuración previa** - La aplicación pedirá tu API key al iniciar
           
-          🔧 **JRE incluido** - no necesitas tener Java instalado
+          - **Windows**: Descarga `UCRED-Movies-Windows-x64.zip`, descomprime y **doble click** en `UCRED-Movies.exe`
+          - **macOS**: Descarga `UCRED-Movies-macOS.zip`, descomprime y **doble click** en `UCRED-Movies.app`
+          - **Linux**: Descarga `UCRED-Movies-Linux-x64.zip`, descomprime y ejecuta `./UCRED-Movies/bin/UCRED-Movies`
+          
+          🔧 **JRE incluido** - No necesitas tener Java instalado
+          
+          ## 🔑 API Key de TMDb
+          
+          Al ejecutar la aplicación, se mostrará un diálogo solicitando tu API key de TMDb.
+          
+          **Obtén tu API key gratis (1 minuto):**
+          1. Crea cuenta en https://www.themoviedb.org/signup
+          2. Ve a https://www.themoviedb.org/settings/api
+          3. Solicita API key (opción "Developer")
+          4. Copia tu **API Key (v3 auth)**
+          
+          ⚠️ **Nota**: La API key NO se guarda, deberás introducirla cada vez que abras la aplicación.
           
           ## JAR ejecutable (requiere Java 17+)
+          
           Si prefieres usar el JAR directamente:
           ```bash
-          export TMDB_API_KEY=tu_api_key_aqui
           java -jar ucred-java-ui-movies-1.0.0.jar
           ```
           
-          ## ⚙️ Configuración necesaria
-          Antes de ejecutar, configura tu API key de TMDb:
-          
-          **Windows (PowerShell)**:
-          ```powershell
-          $env:TMDB_API_KEY="tu_api_key_aqui"
-          .\UCRED-Movies.exe
-          ```
-          
-          **macOS/Linux**:
-          ```bash
-          export TMDB_API_KEY=tu_api_key_aqui
-          ./UCRED-Movies.app/Contents/MacOS/UCRED-Movies  # macOS
-          # o
-          ./UCRED-Movies/bin/UCRED-Movies  # Linux
-          ```
-          
-          📖 **Obtén tu API key gratis**: https://www.themoviedb.org/settings/api
+          La aplicación pedirá la API key al iniciar.
         draft: false
         prerelease: false

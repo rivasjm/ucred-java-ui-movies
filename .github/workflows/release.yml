@@ -28,9 +28,14 @@ jobs:
         name: jar-file
         path: target/ucred-java-ui-movies-*.jar
 
-  build-windows:
+  build-portable:
     needs: build-jar
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    
+    runs-on: ${{ matrix.os }}
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -42,42 +47,11 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
-    - name: Download JAR
-      uses: actions/download-artifact@v4
-      with:
-        name: jar-file
-        path: target/
-
-    - name: Create Windows portable app with jpackage
+    - name: Extract version from pom.xml
+      shell: bash
       run: |
-        jpackage --input target `
-          --name "UCRED-Movies" `
-          --main-jar ucred-java-ui-movies-1.0.0.jar `
-          --type app-image `
-          --app-version 1.0.0 `
-          --vendor "UCRED" `
-          --description "Movie browser using TMDb API"
-        Compress-Archive -Path "UCRED-Movies" -DestinationPath "UCRED-Movies-Windows-x64.zip"
-
-    - name: Upload Windows portable app
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-portable
-        path: "*.zip"
-
-  build-macos:
-    needs: build-jar
-    runs-on: macos-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
+        VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
 
     - name: Download JAR
       uses: actions/download-artifact@v4
@@ -85,68 +59,60 @@ jobs:
         name: jar-file
         path: target/
 
-    - name: Create macOS portable app with jpackage
+    - name: Create portable app with jpackage (macOS / Linux)
+      if: runner.os != 'Windows'
       run: |
         jpackage --input target \
           --name "UCRED-Movies" \
-          --main-jar ucred-java-ui-movies-1.0.0.jar \
+          --main-jar "ucred-java-ui-movies-${{ env.VERSION }}.jar" \
           --type app-image \
-          --app-version 1.0.0 \
+          --app-version "${{ env.VERSION }}" \
           --vendor "UCRED" \
           --description "Movie browser using TMDb API"
-        zip -r UCRED-Movies-macOS.zip "UCRED-Movies.app"
 
-    - name: Upload macOS portable app
-      uses: actions/upload-artifact@v4
-      with:
-        name: macos-portable
-        path: "*.zip"
-
-  build-linux:
-    needs: build-jar
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
-
-    - name: Download JAR
-      uses: actions/download-artifact@v4
-      with:
-        name: jar-file
-        path: target/
-
-    - name: Create Linux portable app with jpackage
+    - name: Create portable app with jpackage (Windows)
+      if: runner.os == 'Windows'
       run: |
-        jpackage --input target \
-          --name UCRED-Movies \
-          --main-jar ucred-java-ui-movies-1.0.0.jar \
-          --type app-image \
-          --app-version 1.0.0 \
-          --vendor "UCRED" \
+        jpackage --input target `
+          --name "UCRED-Movies" `
+          --main-jar "ucred-java-ui-movies-${{ env.VERSION }}.jar" `
+          --type app-image `
+          --app-version "${{ env.VERSION }}" `
+          --vendor "UCRED" `
           --description "Movie browser using TMDb API"
-        zip -r UCRED-Movies-Linux-x64.zip UCRED-Movies
 
-    - name: Upload Linux portable app
+    - name: Package App (Linux)
+      if: runner.os == 'Linux'
+      run: zip -r UCRED-Movies-Linux-x64.zip UCRED-Movies
+
+    - name: Package App (macOS)
+      if: runner.os == 'macOS'
+      run: zip -r UCRED-Movies-macOS.zip "UCRED-Movies.app"
+
+    - name: Package App (Windows)
+      if: runner.os == 'Windows'
+      run: Compress-Archive -Path "UCRED-Movies" -DestinationPath "UCRED-Movies-Windows-x64.zip"
+
+    - name: Upload portable app
       uses: actions/upload-artifact@v4
       with:
-        name: linux-portable
+        name: portable-${{ matrix.os }}
         path: "*.zip"
 
   create-release:
-    needs: [build-windows, build-macos, build-linux]
+    needs: build-portable
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Extract version from pom.xml
+      shell: bash
+      run: |
+        VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
 
     - name: Download all artifacts
       uses: actions/download-artifact@v4
@@ -156,9 +122,7 @@ jobs:
       with:
         files: |
           jar-file/*.jar
-          windows-portable/*.zip
-          macos-portable/*.zip
-          linux-portable/*.zip
+          portable-*/*.zip
         body: |
           # UCRED Movies Browser ${{ github.ref_name }}
           
@@ -190,7 +154,7 @@ jobs:
           
           Si prefieres usar el JAR directamente:
           ```bash
-          java -jar ucred-java-ui-movies-1.0.0.jar
+          java -jar ucred-java-ui-movies-${{ env.VERSION }}.jar
           ```
           
           La aplicación pedirá la API key al iniciar.

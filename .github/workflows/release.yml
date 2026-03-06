@@ -6,8 +6,28 @@ on:
       - 'v*'
 
 jobs:
-  build-jar:
+  test:
     runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Run tests
+      run: mvn test
+
+  build-jar:
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set-artifact.outputs.version }}
+      jar_name: ${{ steps.set-artifact.outputs.jar_name }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -20,7 +40,7 @@ jobs:
         cache: maven
 
     - name: Build JAR
-      run: mvn package -DskipTests
+      run: mvn package
 
     - name: Upload JAR
       uses: actions/upload-artifact@v4
@@ -28,9 +48,21 @@ jobs:
         name: jar-file
         path: target/ucred-java-ui-movies-*.jar
 
-  build-windows:
+    - name: Set artifact vars
+      id: set-artifact
+      run: |
+        VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+        JAR_NAME=$(ls target/*.jar | head -n1 | xargs -n1 basename)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "jar_name=$JAR_NAME" >> $GITHUB_OUTPUT
+    
+  # Consolidated packaging job using a matrix for Windows/macOS/Linux
+  build-apps:
     needs: build-jar
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -48,99 +80,77 @@ jobs:
         name: jar-file
         path: target/
 
-    - name: Create Windows portable app with jpackage
+    - name: Show target contents
+      run: |
+        echo "Runner: $RUNNER_OS"
+        ls -la target || true
+
+    - name: Check Java and jpackage
+      run: |
+        java -version || true
+        jpackage --version || true
+
+    - name: Package (Windows)
+      if: matrix.os == 'windows-latest'
       run: |
         jpackage --input target `
           --name "UCRED-Movies" `
-          --main-jar ucred-java-ui-movies-1.0.0.jar `
+          --main-jar ${{ needs.build-jar.outputs.jar_name }} `
           --type app-image `
-          --app-version 1.0.0 `
+          --app-version ${{ needs.build-jar.outputs.version }} `
           --vendor "UCRED" `
           --description "Movie browser using TMDb API"
         Compress-Archive -Path "UCRED-Movies" -DestinationPath "UCRED-Movies-Windows-x64.zip"
 
-    - name: Upload Windows portable app
+    - name: Package (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        jpackage --input target \
+          --name "UCRED-Movies" \
+          --main-jar ${{ needs.build-jar.outputs.jar_name }} \
+          --type app-image \
+          --app-version ${{ needs.build-jar.outputs.version }} \
+          --vendor "UCRED" \
+          --description "Movie browser using TMDb API"
+        zip -r UCRED-Movies-macOS.zip "UCRED-Movies.app"
+
+    - name: Package (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        jpackage --input target \
+          --name UCRED-Movies \
+          --main-jar ${{ needs.build-jar.outputs.jar_name }} \
+          --type app-image \
+          --app-version ${{ needs.build-jar.outputs.version }} \
+          --vendor "UCRED" \
+          --description "Movie browser using TMDb API"
+        zip -r UCRED-Movies-Linux-x64.zip UCRED-Movies
+
+    - name: Upload portable (Windows)
+      if: matrix.os == 'windows-latest'
       uses: actions/upload-artifact@v4
       with:
         name: windows-portable
         path: "*.zip"
 
-  build-macos:
-    needs: build-jar
-    runs-on: macos-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
-
-    - name: Download JAR
-      uses: actions/download-artifact@v4
-      with:
-        name: jar-file
-        path: target/
-
-    - name: Create macOS portable app with jpackage
-      run: |
-        jpackage --input target \
-          --name "UCRED-Movies" \
-          --main-jar ucred-java-ui-movies-1.0.0.jar \
-          --type app-image \
-          --app-version 1.0.0 \
-          --vendor "UCRED" \
-          --description "Movie browser using TMDb API"
-        zip -r UCRED-Movies-macOS.zip "UCRED-Movies.app"
-
-    - name: Upload macOS portable app
+    - name: Upload portable (macOS)
+      if: matrix.os == 'macos-latest'
       uses: actions/upload-artifact@v4
       with:
         name: macos-portable
         path: "*.zip"
 
-  build-linux:
-    needs: build-jar
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
-
-    - name: Download JAR
-      uses: actions/download-artifact@v4
-      with:
-        name: jar-file
-        path: target/
-
-    - name: Create Linux portable app with jpackage
-      run: |
-        jpackage --input target \
-          --name UCRED-Movies \
-          --main-jar ucred-java-ui-movies-1.0.0.jar \
-          --type app-image \
-          --app-version 1.0.0 \
-          --vendor "UCRED" \
-          --description "Movie browser using TMDb API"
-        zip -r UCRED-Movies-Linux-x64.zip UCRED-Movies
-
-    - name: Upload Linux portable app
+    - name: Upload portable (Linux)
+      if: matrix.os == 'ubuntu-latest'
       uses: actions/upload-artifact@v4
       with:
         name: linux-portable
         path: "*.zip"
 
+  
+
   create-release:
-    needs: [build-windows, build-macos, build-linux]
+    needs: [build-apps]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -187,10 +197,10 @@ jobs:
           ⚠️ **Nota**: La API key NO se guarda, deberás introducirla cada vez que abras la aplicación.
           
           ## JAR ejecutable (requiere Java 17+)
-          
-          Si prefieres usar el JAR directamente:
+
+          Si prefieres usar el JAR directamente (requiere Java 17+):
           ```bash
-          java -jar ucred-java-ui-movies-1.0.0.jar
+          java -jar jar-file/*.jar
           ```
           
           La aplicación pedirá la API key al iniciar.
